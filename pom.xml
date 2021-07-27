@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.atguigu</groupId>
+    <artifactId>gmall-flink-210225</artifactId>
+    <packaging>pom</packaging>
+    <version>1.0-SNAPSHOT</version>
+    <modules>
+        <module>gmall-test</module>
+        <module>gmall-flink-cdc</module>
+    </modules>
+
+    <properties>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+    </properties>
+
+    <!--  声明并引入依赖,所有子模块都需要的依赖  -->
+<!--    <dependencies>-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.spark</groupId>-->
+<!--            <artifactId>spark-core_2.12</artifactId>-->
+<!--            <version>3.0.0</version>-->
+<!--        </dependency>-->
+<!--    </dependencies>-->
+
+<!--    &lt;!&ndash;  声明但不引入依赖,某几个模块需要的依赖,且在子模块中需要单独引入(不需要写版本号)  &ndash;&gt;-->
+<!--    <dependencyManagement>-->
+<!--        <dependencies>-->
+<!--            <dependency>-->
+<!--                <groupId>org.apache.spark</groupId>-->
+<!--                <artifactId>spark-hive_2.12</artifactId>-->
+<!--                <version>3.0.0</version>-->
+<!--            </dependency>-->
+<!--        </dependencies>-->
+<!--    </dependencyManagement>-->
+
+<!--    <build>-->
+<!--        <plugins></plugins>-->
+<!--        <pluginManagement></pluginManagement>-->
+<!--    </build>-->
+
+</project>
