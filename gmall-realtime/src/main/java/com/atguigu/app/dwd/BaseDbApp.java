@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.ververica.cdc.connectors.mysql.MySQLSource;
 import com.alibaba.ververica.cdc.connectors.mysql.table.StartupOptions;
 import com.alibaba.ververica.cdc.debezium.DebeziumSourceFunction;
+import com.atguigu.app.func.DimSinkFunction;
 import com.atguigu.app.func.MyStringDeserializationSchema;
 import com.atguigu.app.func.TableProcessFunction;
 import com.atguigu.bean.TableProcess;
@@ -12,9 +13,16 @@ import org.apache.flink.api.common.state.MapStateDescriptor;
 import org.apache.flink.streaming.api.datastream.*;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.co.BroadcastProcessFunction;
+import org.apache.flink.streaming.connectors.kafka.KafkaSerializationSchema;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.OutputTag;
+import org.apache.kafka.clients.producer.ProducerRecord;
 
+import javax.annotation.Nullable;
+
+//数据流:web/app -> Nginx -> SpringBoot -> Mysql -> FlinkApp -> Kafka(ods) -> FlinkApp -> Kafka(dwd)/Phoenix(dim)
+
+//程  序:          mock                -> Mysql  -> FlinkCDCApp -> Kafka(ZK) -> BaseDbApp -> Kafka/Phoenix(ZK,HDFS,HBase)
 public class BaseDbApp {
 
     public static void main(String[] args) throws Exception {
@@ -69,6 +77,16 @@ public class BaseDbApp {
         //TODO 7.获取Kafka数据流以及HBASE数据流写入对应的存储框架中
         mainDS.print("Kafka>>>>>>>");
         hbaseDS.print("HBase>>>>>>>");
+
+        hbaseDS.addSink(new DimSinkFunction());
+        //element:{"database":"","tableName":"base_trademark","data":{"id":"","tm_name":"","logo_url":""},"before":{},"type":"insert","sinkTable":"dim_base_trademark"}
+        mainDS.addSink(MyKafkaUtil.getFlinkKafkaProducer(new KafkaSerializationSchema<JSONObject>() {
+            @Override
+            public ProducerRecord<byte[], byte[]> serialize(JSONObject element, @Nullable Long timestamp) {
+                return new ProducerRecord<>(element.getString("sinkTable"),
+                        element.getString("data").getBytes());
+            }
+        }));
 
         //TODO 8.启动任务
         env.execute();
