@@ -5,20 +5,19 @@ import com.alibaba.ververica.cdc.connectors.mysql.MySQLSource;
 import com.alibaba.ververica.cdc.connectors.mysql.table.StartupOptions;
 import com.alibaba.ververica.cdc.debezium.DebeziumSourceFunction;
 import com.atguigu.app.func.MyStringDeserializationSchema;
+import com.atguigu.app.func.TableProcessFunction;
 import com.atguigu.bean.TableProcess;
 import com.atguigu.utils.MyKafkaUtil;
 import org.apache.flink.api.common.state.MapStateDescriptor;
-import org.apache.flink.streaming.api.datastream.BroadcastConnectedStream;
-import org.apache.flink.streaming.api.datastream.BroadcastStream;
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
+import org.apache.flink.streaming.api.datastream.*;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.co.BroadcastProcessFunction;
 import org.apache.flink.util.Collector;
+import org.apache.flink.util.OutputTag;
 
 public class BaseDbApp {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 
         //TODO 1.获取执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -60,23 +59,19 @@ public class BaseDbApp {
 
         //TODO 5.连接主流和广播流
         BroadcastConnectedStream<JSONObject, String> broadcastConnectedStream = jsonObjDS.connect(broadcastStream);
-        broadcastConnectedStream.process(new BroadcastProcessFunction<JSONObject, String, Object>() {
-            @Override
-            public void processElement(JSONObject value, ReadOnlyContext ctx, Collector<Object> out) throws Exception {
-
-            }
-
-            @Override
-            public void processBroadcastElement(String value, Context ctx, Collector<Object> out) throws Exception {
-
-            }
-        });
+        OutputTag<JSONObject> hbaseTag = new OutputTag<JSONObject>("hbase") {
+        };
+        SingleOutputStreamOperator<JSONObject> mainDS = broadcastConnectedStream.process(new TableProcessFunction(mapStateDescriptor, hbaseTag));
 
         //TODO 6.处理连接流数据
+        DataStream<JSONObject> hbaseDS = mainDS.getSideOutput(hbaseTag);
 
         //TODO 7.获取Kafka数据流以及HBASE数据流写入对应的存储框架中
+        mainDS.print("Kafka>>>>>>>");
+        hbaseDS.print("HBase>>>>>>>");
 
         //TODO 8.启动任务
+        env.execute();
 
     }
 
