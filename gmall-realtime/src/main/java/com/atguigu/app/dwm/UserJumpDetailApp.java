@@ -23,6 +23,9 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+//数据流：web/app -> nginx -> SpringBoot -> Kafka(ods) -> FlinkApp -> Kafka(dwd) -> FlinkApp -> Kafka(dwm)
+
+//程  序：mock    -> nginx -> Logger     -> Kafka(ZK)  -> BaseLogApp -> Kafka -> UserJumpDetailApp -> Kafka
 public class UserJumpDetailApp {
 
     public static void main(String[] args) throws Exception {
