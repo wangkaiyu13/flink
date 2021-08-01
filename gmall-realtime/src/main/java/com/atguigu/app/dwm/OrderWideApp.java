@@ -1,6 +1,7 @@
 package com.atguigu.app.dwm;
 
 import com.alibaba.fastjson.JSONObject;
+import com.atguigu.app.func.DimAsyncFunction;
 import com.atguigu.bean.OrderDetail;
 import com.atguigu.bean.OrderInfo;
 import com.atguigu.bean.OrderWide;
@@ -11,6 +12,7 @@ import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.TimeCharacteristic;
+import org.apache.flink.streaming.api.datastream.AsyncDataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -20,6 +22,7 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
 
 import java.text.SimpleDateFormat;
+import java.util.concurrent.TimeUnit;
 
 public class OrderWideApp {
 
@@ -100,22 +103,23 @@ public class OrderWideApp {
         orderWideDS.print("OrderWide>>>>>>>>>>");
 
         //TODO 5.关联维度信息
-//        orderWideDS.map(new RichMapFunction<OrderWide, OrderWide>() {
-//
-//            @Override
-//            public void open(Configuration parameters) throws Exception {
-//                //初始化连接
-//            }
-//
-//            @Override
-//            public OrderWide map(OrderWide orderWide) throws Exception {
-//
-//                Long user_id = orderWide.getUser_id();
-//                JSONObject dimInfo = DimUtil.getDimInfo(co, "", user_id.toString());
-//
-//                return null;
-//            }
-//        });
+
+        //5.1 关联用户维度
+        AsyncDataStream.unorderedWait(orderWideDS,
+                new DimAsyncFunction<OrderWide>("DIM_USER_INFO") {
+                    @Override
+                    public String getKey(OrderWide orderWide) {
+                        return orderWide.getUser_id().toString();
+                    }
+
+                    @Override
+                    public void join(OrderWide orderWide, JSONObject dimInfo) {
+                        String gender = dimInfo.getString("GENDER");
+                        orderWide.setUser_gender(gender);
+                    }
+                },
+                60,
+                TimeUnit.SECONDS);
 
         //TODO 6.将数据写入Kafka
 

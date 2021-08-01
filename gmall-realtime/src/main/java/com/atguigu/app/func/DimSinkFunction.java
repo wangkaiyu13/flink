@@ -39,11 +39,12 @@ public class DimSinkFunction extends RichSinkFunction<JSONObject> {
             preparedStatement = connection.prepareStatement(upsertSql);
 
             //判断当前维度数据如果是更新操作,则需要删除Redis中的旧数据
-            String redisKey = "DIM:" +
-                    value.getString("sinkTable").toUpperCase() + ":" +
-                    value.getJSONObject("data").getString("id");
-
-            DimUtil.delDimInfo(redisKey);
+            if ("update".equals(value.getString("type"))) {
+                String redisKey = "DIM:" +
+                        value.getString("sinkTable").toUpperCase() + ":" +
+                        value.getJSONObject("data").getString("id");
+                DimUtil.delDimInfo(redisKey);
+            }
 
             //执行
             preparedStatement.execute();
