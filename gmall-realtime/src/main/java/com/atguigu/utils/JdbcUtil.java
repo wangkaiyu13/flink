@@ -1,5 +1,7 @@
 package com.atguigu.utils;
 
+import com.alibaba.fastjson.JSONObject;
+import com.atguigu.common.GmallConfig;
 import com.google.common.base.CaseFormat;
 import org.apache.commons.beanutils.BeanUtils;
 
@@ -14,9 +16,11 @@ public class JdbcUtil {
         //创建结果集
         ArrayList<T> list = new ArrayList<>();
 
+        PreparedStatement preparedStatement = null;
+
         try {
             //编译SQL
-            PreparedStatement preparedStatement = connection.prepareStatement(querySql);
+            preparedStatement = connection.prepareStatement(querySql);
 
             //执行查询
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -49,15 +53,31 @@ public class JdbcUtil {
 
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            if (preparedStatement != null) {
+                try {
+                    preparedStatement.close();
+                } catch (SQLException throwables) {
+                    throwables.printStackTrace();
+                }
+            }
         }
 
         //返回结果
         return list;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 
-        System.out.println(CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, "TM_NAME"));
+//        System.out.println(CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, "TM_NAME"));
+        Class.forName(GmallConfig.PHOENIX_DRIVER);
+        Connection connection = DriverManager.getConnection(GmallConfig.PHOENIX_SERVER);
+        System.out.println(queryList(connection,
+                "select * from GMALL210108_REALTIME.DIM_BASE_TRADEMARK where id='10'",
+                JSONObject.class,
+                false));
+
+        connection.close();
 
     }
 

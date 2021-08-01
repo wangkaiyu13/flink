@@ -2,6 +2,7 @@ package com.atguigu.app.func;
 
 import com.alibaba.fastjson.JSONObject;
 import com.atguigu.common.GmallConfig;
+import com.atguigu.utils.DimUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
@@ -36,6 +37,13 @@ public class DimSinkFunction extends RichSinkFunction<JSONObject> {
 
             //预编译SQL
             preparedStatement = connection.prepareStatement(upsertSql);
+
+            //判断当前维度数据如果是更新操作,则需要删除Redis中的旧数据
+            String redisKey = "DIM:" +
+                    value.getString("sinkTable").toUpperCase() + ":" +
+                    value.getJSONObject("data").getString("id");
+
+            DimUtil.delDimInfo(redisKey);
 
             //执行
             preparedStatement.execute();

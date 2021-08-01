@@ -4,9 +4,12 @@ import com.alibaba.fastjson.JSONObject;
 import com.atguigu.bean.OrderDetail;
 import com.atguigu.bean.OrderInfo;
 import com.atguigu.bean.OrderWide;
+import com.atguigu.utils.DimUtil;
 import com.atguigu.utils.MyKafkaUtil;
 import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.api.common.functions.RichMapFunction;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
@@ -97,17 +100,22 @@ public class OrderWideApp {
         orderWideDS.print("OrderWide>>>>>>>>>>");
 
         //TODO 5.关联维度信息
-        orderWideDS.map(orderWide -> {
-
-            Long user_id = orderWide.getUser_id();
-
-            //查询Phoenix
-
-            //补充用户信息
-
-            //返回数据
-            return orderWide;
-        });
+//        orderWideDS.map(new RichMapFunction<OrderWide, OrderWide>() {
+//
+//            @Override
+//            public void open(Configuration parameters) throws Exception {
+//                //初始化连接
+//            }
+//
+//            @Override
+//            public OrderWide map(OrderWide orderWide) throws Exception {
+//
+//                Long user_id = orderWide.getUser_id();
+//                JSONObject dimInfo = DimUtil.getDimInfo(co, "", user_id.toString());
+//
+//                return null;
+//            }
+//        });
 
         //TODO 6.将数据写入Kafka
 
