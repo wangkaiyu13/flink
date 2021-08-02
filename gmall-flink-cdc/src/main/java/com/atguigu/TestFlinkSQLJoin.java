@@ -31,7 +31,7 @@ public class TestFlinkSQLJoin {
         tableEnv.createTemporaryView("t1", tA);
         tableEnv.createTemporaryView("t2", tB);
 
-        //inner join  左表:disable            右表:OnCreateAndWrite
+        //inner join  左表:OnCreateAndWrite   右表:OnCreateAndWrite
         //tableEnv.executeSql("select t1.id,name,sex from t1 join t2 on t1.id = t2.id").print();
 
         //left join   左表:OnReadAndWrite     右表:OnCreateAndWrite

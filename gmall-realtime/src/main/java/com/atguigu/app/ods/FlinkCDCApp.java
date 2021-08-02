@@ -32,7 +32,7 @@ public class FlinkCDCApp {
                 .username("root")
                 .password("000000")
                 .databaseList("gmall-210225-flink")
-                .startupOptions(StartupOptions.initial())
+                .startupOptions(StartupOptions.latest())
                 .deserializer(new MyStringDeserializationSchema())
                 .build();
         DataStreamSource<String> dataStreamSource = env.addSource(sourceFunction);
