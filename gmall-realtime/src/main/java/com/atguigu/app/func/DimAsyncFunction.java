@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.atguigu.common.GmallConfig;
 import com.atguigu.utils.DimUtil;
 import com.atguigu.utils.ThreadPoolUtil;
+import lombok.SneakyThrows;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.async.ResultFuture;
 import org.apache.flink.streaming.api.functions.async.RichAsyncFunction;
@@ -38,6 +39,7 @@ public abstract class DimAsyncFunction<T> extends RichAsyncFunction<T, T> implem
     public void asyncInvoke(T input, ResultFuture<T> resultFuture) throws Exception {
 
         threadPoolExecutor.submit(new Runnable() {
+            @SneakyThrows
             @Override
             public void run() {
 
