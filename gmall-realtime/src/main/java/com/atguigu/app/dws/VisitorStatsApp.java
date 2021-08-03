@@ -2,12 +2,26 @@ package com.atguigu.app.dws;
 
 import com.alibaba.fastjson.JSONObject;
 import com.atguigu.bean.VisitorStats;
+import com.atguigu.utils.DateTimeUtil;
 import com.atguigu.utils.MyKafkaUtil;
-import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
+import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.api.common.functions.ReduceFunction;
+import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.api.java.tuple.Tuple4;
+import org.apache.flink.streaming.api.datastream.*;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
+import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
+import org.apache.flink.util.Collector;
 
+import java.time.Duration;
+import java.util.Date;
+
+//数据流:web/app -> nginx -> SpringBoot -> Kafka(ods) -> FlinkApp -> Kafka(dwd) -> FlinkApp -> Kafka(dwm) -> FlinkApp -> ClickHouse
+//程  序:mock -> nginx -> logger -> Kafka(ZK) -> BaseLogApp -> Kafka -> UniqueVisitApp/UserJumpDetailApp -> Kafka -> VisitorStatsApp -> ClickHouse
 public class VisitorStatsApp {
 
     public static void main(String[] args) throws Exception {
@@ -100,10 +114,56 @@ public class VisitorStatsApp {
         DataStream<VisitorStats> unionDS = visitStatsWithUvDS.union(visitStatsWithUjDS, visitStatsWithPvDS);
 
         //TODO 5.提取时间戳生成WaterMark
+        SingleOutputStreamOperator<VisitorStats> visitorStatsWithWM = unionDS.assignTimestampsAndWatermarks(WatermarkStrategy.<VisitorStats>forBoundedOutOfOrderness(Duration.ofSeconds(10)).withTimestampAssigner(new SerializableTimestampAssigner<VisitorStats>() {
+            @Override
+            public long extractTimestamp(VisitorStats element, long recordTimestamp) {
+                return element.getTs();
+            }
+        }));
 
         //TODO 6.分组,开窗,聚合
+        KeyedStream<VisitorStats, Tuple4<String, String, String, String>> keyedStream = visitorStatsWithWM.keyBy(new KeySelector<VisitorStats, Tuple4<String, String, String, String>>() {
+            @Override
+            public Tuple4<String, String, String, String> getKey(VisitorStats value) throws Exception {
+                return new Tuple4<>(value.getAr(),
+                        value.getCh(),
+                        value.getIs_new(),
+                        value.getVc());
+            }
+        });
+        WindowedStream<VisitorStats, Tuple4<String, String, String, String>, TimeWindow> windowedStream = keyedStream.window(TumblingEventTimeWindows.of(Time.seconds(10)));
+        SingleOutputStreamOperator<VisitorStats> result = windowedStream.reduce(new ReduceFunction<VisitorStats>() {
+            @Override
+            public VisitorStats reduce(VisitorStats value1, VisitorStats value2) throws Exception {
+
+                value1.setUv_ct(value1.getUv_ct() + value2.getUv_ct());
+                value1.setPv_ct(value1.getPv_ct() + value2.getPv_ct());
+                value1.setSv_ct(value1.getSv_ct() + value2.getSv_ct());
+                value1.setUj_ct(value1.getUj_ct() + value2.getUj_ct());
+                value1.setDur_sum(value1.getDur_sum() + value2.getDur_sum());
+
+                return value1;
+            }
+        }, new WindowFunction<VisitorStats, VisitorStats, Tuple4<String, String, String, String>, TimeWindow>() {
+            @Override
+            public void apply(Tuple4<String, String, String, String> stringStringStringStringTuple4, TimeWindow window, Iterable<VisitorStats> input, Collector<VisitorStats> out) throws Exception {
+
+                //取出聚合后的数据
+                VisitorStats visitorStats = input.iterator().next();
+
+                String stt = DateTimeUtil.toYMDhms(new Date(window.getStart()));
+                String edt = DateTimeUtil.toYMDhms(new Date(window.getEnd()));
+
+                visitorStats.setStt(stt);
+                visitorStats.setEdt(edt);
+
+                //输出数据
+                out.collect(visitorStats);
+            }
+        });
 
         //TODO 7.将数据写入ClickHouse
+        result.print();
 
         //TODO 8.启动任务
         env.execute();
