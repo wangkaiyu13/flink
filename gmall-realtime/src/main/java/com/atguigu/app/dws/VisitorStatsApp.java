@@ -2,6 +2,7 @@ package com.atguigu.app.dws;
 
 import com.alibaba.fastjson.JSONObject;
 import com.atguigu.bean.VisitorStats;
+import com.atguigu.utils.ClickHouseUtil;
 import com.atguigu.utils.DateTimeUtil;
 import com.atguigu.utils.MyKafkaUtil;
 import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
@@ -9,6 +10,7 @@ import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple4;
+import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.streaming.api.datastream.*;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
@@ -164,6 +166,7 @@ public class VisitorStatsApp {
 
         //TODO 7.将数据写入ClickHouse
         result.print();
+        result.addSink(ClickHouseUtil.getSink("insert into visitor_stats_210225 values(?,?,?,?,?,?,?,?,?,?,?,?)"));
 
         //TODO 8.启动任务
         env.execute();
