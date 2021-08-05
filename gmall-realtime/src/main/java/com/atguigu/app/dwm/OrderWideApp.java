@@ -5,6 +5,7 @@ import com.atguigu.app.func.DimAsyncFunction;
 import com.atguigu.bean.OrderDetail;
 import com.atguigu.bean.OrderInfo;
 import com.atguigu.bean.OrderWide;
+import com.atguigu.bean.ProductStats;
 import com.atguigu.utils.DimUtil;
 import com.atguigu.utils.MyKafkaUtil;
 import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
