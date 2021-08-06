@@ -286,7 +286,7 @@ public class ProductStatsApp {
                     @Override
                     public void join(ProductStats productStats, JSONObject dimInfo) throws ParseException {
                         productStats.setSku_price(dimInfo.getBigDecimal("PRICE"));
-                        productStats.setSku_name("SKU_NAME");
+                        productStats.setSku_name(dimInfo.getString("SKU_NAME"));
                         productStats.setSpu_id(dimInfo.getLong("SPU_ID"));
                         productStats.setTm_id(dimInfo.getLong("TM_ID"));
                         productStats.setCategory3_id(dimInfo.getLong("CATEGORY3_ID"));
